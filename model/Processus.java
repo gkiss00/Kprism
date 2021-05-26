@@ -42,4 +42,16 @@ public class Processus {
         }
         return str;
     }
+
+    @Override
+    public boolean equals(Object o){
+        if (o == null)
+            return false;
+        if (o instanceof Processus){
+            Processus p = (Processus)o;
+            return (p.name.compareTo(name) == 0);
+        } else {
+            return false;
+        }
+    }
 }

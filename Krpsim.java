@@ -46,8 +46,8 @@ public class Krpsim {
             ouputTime();
             ouputPath();
             System.out.println("* * * * * * * * * *");
-            System.out.println("total cost: " + best.g);
-            System.out.println("store:");
+            System.out.println("#total cost: " + best.g);
+            System.out.println("#store:");
             System.out.println(best);
             System.exit(0);
         } catch (Exception e) {

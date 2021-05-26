@@ -67,6 +67,26 @@ public class Node implements Comparable{
         }
     }
 
+    public void applyProcessSecure(Processus pro) throws Exception{
+        for (int i = 0; i < pro.input.size(); ++i){
+            Product p = getCorrespondingProduct(pro.input.get(i));
+            p.quantity -= pro.input.get(i).quantity;
+            if(p.quantity == 0)
+                products.remove(p);
+            else if(p.quantity < 0)
+                throw new Exception("Not enought cantity of " + p.name + " to execute the process " + pro.name);
+        }
+        for (int i = 0; i < pro.output.size(); ++i){
+            try{
+                Product p = getCorrespondingProduct(pro.output.get(i));
+                p.quantity += pro.output.get(i).quantity;
+            } catch (Exception e){
+                Product p = new Product(pro.output.get(i));
+                products.add(p);
+            }
+        }
+    }
+
     private Product getCorrespondingProduct(Product p)throws Exception{
         for (int i = 0; i < products.size(); ++i){
             if (products.get(i).name.compareTo(p.name) == 0)
