@@ -1,0 +1,9 @@
+#Je suis un commentaire
+#Un deuxième commentaire
+
+Apple | 1
+
+Cramble | Apple:1 => Apple:1, Banane: 1 | 5
+Cramble2 | Banane:5 => Peer:1 | 5
+
+optimize | time:Apple
