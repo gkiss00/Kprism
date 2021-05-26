@@ -6,6 +6,8 @@ import java.io.*;
 
 public class Krpsim {
     public static int timeout;
+    public static long startTime;
+    public static long endTime;
     public static Semaphore semaphore = new Semaphore(1);
     public static List<Product> startProducts = new ArrayList<>();
     public static List<Processus> processus = new ArrayList<>();
@@ -13,6 +15,14 @@ public class Krpsim {
     public static PriorityQueue<Node> openList = new PriorityQueue<>();
     public static List<String> optimize = new ArrayList<>();
     public static Node best;
+
+    private static void ouputTime(){
+        System.out.println("#Time: " + 
+                            (endTime - startTime) / 1000 +
+                            " secondes and " +
+                            (endTime - startTime) % 1000 +
+                            " millisecondes");
+    }
 
     private static void ouputPath(){
         List<String> list = new ArrayList<>();
@@ -33,8 +43,11 @@ public class Krpsim {
     private static void output(){
         try{
             semaphore.acquire();
+            ouputTime();
             ouputPath();
-            System.out.println("cost " + best.g);
+            System.out.println("* * * * * * * * * *");
+            System.out.println("total cost: " + best.g);
+            System.out.println("store:");
             System.out.println(best);
             System.exit(0);
         } catch (Exception e) {
@@ -42,8 +55,32 @@ public class Krpsim {
         }
     }
 
+    private static boolean checkInfiniteLoop(){
+        Node previous = best.parent;
+        int c = 0;
+        while(previous != null){
+            if(best.equalsAt(previous)){
+                ++c;
+            }
+            previous = previous.parent;
+        }
+        //System.out.println("****BEST***");
+        //System.out.println(best);
+        try {
+        //Thread.sleep(500);
+
+        }catch(Exception e){
+
+        }
+        return (c >= 5);
+    }
+
     private static void getBest(Node node){
-        if (best.compareTo(node) < 0)
+        //System.out.println("****NODE***");
+        //System.out.println(node);
+        //System.out.println("****COMP***");
+        //System.out.println(best.compareTo(node));
+        if (best.compareTo(node) > 0)
             best = node;
         if (best.compareTo(node) == 0){
             if(best.g > node.g)
@@ -55,6 +92,7 @@ public class Krpsim {
         Node next = new Node(parent, processus.get(index));
         next.setH(optimize);
         if(!closedList.contains(next)){
+            //System.out.println("add");
             openList.add(next);
         } else {
             //System.out.println("boucle infinie");
@@ -75,21 +113,29 @@ public class Krpsim {
     private static void run(){
         Thread thread = new Thread(new TimeChecker(timeout, semaphore));
         thread.start();
+        startTime = System.currentTimeMillis();
         while(openList.size() != 0){
             //get the first node
             Node node = openList.poll();
             //get all processus possible
             List<Integer> l = getProcess(node);
+            //System.out.println("Process possible: " + l.size());
             //get all next states
             for (int i = 0; i < l.size(); ++i){
                 getNextNode(node, l.get(i));
             }
             //check for the best
             getBest(node);
+            //check infinite loop
+            if (checkInfiniteLoop()){
+                System.out.println("#Infinite loop");
+                break;
+            }
             //remove actual state
             if (!closedList.contains(node))
                 closedList.add(node);
         }
+        endTime = System.currentTimeMillis();
         output();
     }
 

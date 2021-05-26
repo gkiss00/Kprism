@@ -1,0 +1,11 @@
+Metal | 140
+
+CreateGarbage | Metal:5 => Garbage:1| 5
+CreateLitleWheel | Metal:5 => LilteWheel: 1 | 10
+CreateBigWheel | Metal:10 => BigWheel: 1 | 15
+CreateChain | Metal:30 => Chain: 1 | 20
+CreateCannon | Metal:50 => Cannon: 1 | 30
+CreateTankA | LilteWheel:2, BigWheel:2, Chain:2, Cannon:1 => TankA:1 | 50
+CreateTankB | LilteWheel:2, BigWheel:2, Chain:2, Cannon:1 => TankB:1 | 50
+
+optimize | time:TankA

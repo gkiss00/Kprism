@@ -1,0 +1,8 @@
+Money | 10
+
+Bet | Money:5 => Money: 10 | 2
+BigBet | Money:10 => Money: 20 | 2
+GigaBet | Money:20 => Money: 40 | 2
+MasterBet | Money:40 => Money: 120 | 2
+
+optimize | time:Money

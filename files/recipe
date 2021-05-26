@@ -1,0 +1,16 @@
+#La recette d'un délicieux 4x4
+
+Energy | 20
+Sugar | 1
+Egg | 2
+Butter | 1
+Flour | 1
+Oven | 1
+
+#TakeBreak | Energy:1 => Energy:2 | 10
+Mix1 | Energy:5, Sugar:1, Egg:2 => DeliciousMix:1 | 20
+Mix2 | Energy:5, DeliciousMix:1, Butter:1 => NotDeliciousMix:1 | 10
+Mix3 | Energy:5, NotDeliciousMix:1, Flour:1 => NotBackedCake:1 | 30
+Back | Energy:5, NotBackedCake:1, Oven:1 => Oven:1, Cake:1 | 0
+
+optimize | time:Cake

@@ -1,0 +1,6 @@
+Egg | 1
+
+Hatch | Egg:1 => Chicken: 1 | 0
+Lay | Chicken:1 => Egg:1, Chicken:1 | 0
+
+optimize | time:Chicken

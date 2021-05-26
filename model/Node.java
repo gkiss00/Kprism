@@ -75,6 +75,22 @@ public class Node implements Comparable{
         throw new Exception("No product with this name");
     }
 
+    public boolean equalsAt(Node node){
+        for (int i = 0; i < products.size(); ++i){
+            boolean ok = false;
+            for (int j = 0; j < node.products.size(); ++j){
+                if(products.get(i).name.compareTo(node.products.get(j).name) == 0
+                && products.get(i).quantity >= node.products.get(j).quantity){
+                    ok = true;
+                    break;
+                }
+            }
+            if(!ok)
+                return false;
+        }
+        return true;
+    }
+
     @Override
     public boolean equals(Object o){
         if(o == null)
@@ -108,7 +124,7 @@ public class Node implements Comparable{
             return -1;
         if (o instanceof Node){
             Node node = (Node)o;
-            return h - node.h;
+            return  node.h - h;
         } else {
             return -1;
         }
