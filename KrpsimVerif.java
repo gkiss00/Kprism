@@ -1,9 +1,9 @@
 import java.util.*;
 import model.*;
-import helper.*;
 import java.io.*;
 
 public class KrpsimVerif {
+    public static final String UTF8_BOM = "\uFEFF";
     public static List<Product> startProducts = new ArrayList<>();
     public static List<Processus> processus = new ArrayList<>();
     public static List<String> optimize = new ArrayList<>();
@@ -51,40 +51,63 @@ public class KrpsimVerif {
         throw new Exception("No process named " + name);
     }
 
+    private static void slow(){
+        try {
+            for (int i = 0; i < 3; ++i){
+                Thread.sleep(300);
+                System.out.print(". ");
+            }
+            System.out.println(".");
+        }catch (Exception e){
+
+        }
+    }
+
     private static void checkIfCorrect() throws Exception{
         for (int i = 0; i < finalProducts.size(); ++i){
-            if (best.products.contains(finalProducts.get(i)))
+            if (!best.products.contains(finalProducts.get(i)))
                 throw new Exception("The final product doesn't corresp");
         }
     }
 
     private static void verif(String[]args) throws Exception{
+        boolean first = true;
         File f = new File(args[1]);
-        Scanner scan = new Scanner(f);
         boolean finalState = false;
         int cost = 0;
-        while(scan.hasNextLine()){
-            String line = scan.nextLine().trim();
-            if(line.compareTo("* * * * * * * * * *") == 0){
-                finalState = true;
-            } else if (line.length() == 0 || line.charAt(1) == '#'){
-                //PASS
-            } else if (!finalState){
-                //Check if process can be executed
-                String[] arg = line.split("\\|");
-                Processus p = getGoodProcess(arg[1].trim());
-                best.applyProcessSecure(p);
-                if(Integer.parseInt(arg[0].trim()) != cost)
-                    throw new Exception("Cost value is incorrect");
-                cost += p.cost;
+        FileInputStream fis = new FileInputStream(args[1]);
+        BufferedReader r = new BufferedReader(new InputStreamReader(fis,
+                "UTF16"));
+        for (String line = ""; (line = r.readLine()) != null;) {
+            line = line.trim();
+            if (first == true){
+                //s = removeUTF8BOM(s);
+                first = false;
             } else {
-                String[] arg = line.split("=>");
-                Product p = new Product(arg[0].trim(), Integer.parseInt(arg[1].trim()));
-                finalProducts.add(p);
+                System.out.println(line);
+                if(line.compareTo("* * * * * * * * * *") == 0){
+                    finalState = true;
+                } else if (line.length() == 0 || line.charAt(0) == '#'){
+                    //PASS
+                } else if (!finalState){
+                    //Check if process can be executed
+                    slow();
+                    String[] arg = line.split("\\|");
+                    Processus p = getGoodProcess(arg[1].trim());
+                    best.applyProcessSecure(p);
+                    if(Integer.parseInt(arg[0].trim()) != cost)
+                        throw new Exception("Cost value is incorrect");
+                    cost += p.cost;
+                } else {
+                    String[] arg = line.split("=>");
+                    Product p = new Product(arg[0].trim(), Integer.parseInt(arg[1].trim()));
+                    finalProducts.add(p);
+                }
             }
         }
-        scan.close();
+        r.close();
         checkIfCorrect();
+        System.out.println("Ok");
     }
 
     private static void getInput(String[]args) throws Exception{
