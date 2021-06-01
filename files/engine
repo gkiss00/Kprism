@@ -6,6 +6,6 @@ CreateBigWheel | Metal:10 => BigWheel: 1 | 15
 CreateChain | Metal:30 => Chain: 1 | 20
 CreateCannon | Metal:50 => Cannon: 1 | 30
 CreateTankA | LilteWheel:2, BigWheel:2, Chain:2, Cannon:1 => TankA:1 | 50
-CreateTankB | LilteWheel:2, BigWheel:2, Chain:2, Cannon:1 => TankB:1 | 50
+CreateTankB | LilteWheel:2, BigWheel:2, Chain:2, Cannon:1 => TankB:1 | 40
 
-optimize | time:TankA
+optimize | time:TankA, time:TankB
