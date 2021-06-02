@@ -1,199 +1,182 @@
+import java.util.*;
 import model.*;
 import helper.*;
-import java.util.*;
-import java.util.concurrent.Semaphore;
-import java.io.*;
 
 public class Krpsim {
-    public static int timeout;
-    public static long startTime;
-    public static long endTime;
-    public static Semaphore semaphore = new Semaphore(1);
-    public static List<Product> startProducts = new ArrayList<>();
+    public static int nbCycle;
+    public static List<Stock> stocks = new ArrayList<>();
     public static List<Processus> processus = new ArrayList<>();
-    public static List<Node> closedList = new ArrayList<>();
-    public static PriorityQueue<Node> openList = new PriorityQueue<>();
-    public static List<String> optimize = new ArrayList<>();
-    public static Node best;
+    public static List<Stock> optimize = new ArrayList<>();
+    public static State initialState;
+    public static PriorityQueue<State> openList = new PriorityQueue<>();
+    public static List<State> closedList = new ArrayList<>();
+    public static State finalState;
 
-    private static void ouputTime(){
-        System.out.println("#Time: " + 
-                            (endTime - startTime) / 1000 +
-                            " secondes and " +
-                            (endTime - startTime) % 1000 +
-                            " millisecondes");
+    private static void log(String str){
+        System.out.println(str);
     }
 
-    private static void ouputPath(){
-        List<String> list = new ArrayList<>();
-        Node actual = best;
-        Node prec = actual.parent;
-        while(prec != null){
-            //System.out.println(prec + " " + actual.process + " " + prec.parent);
-            String str = prec.g + " | " + actual.process.name + "\n";
-            actual = actual.parent;
-            prec = prec.parent;
-            list.add(str);
+    private static void printData(){
+        log("* * * * * STOCK: " + stocks.size() + " * * * * *");
+        for (int i = 0; i < stocks.size(); ++i){
+            System.out.println(stocks.get(i));
         }
-        for (int i = list.size() - 1; i >= 0; --i){
-            System.out.println(list.get(i));
-        }
-    }
-
-    private static void output(){
-        try{
-            semaphore.acquire();
-            ouputTime();
-            ouputPath();
-            System.out.println("* * * * * * * * * *");
-            System.out.println("#total cost: " + best.g);
-            System.out.println("#store:");
-            System.out.println(best);
-            System.exit(0);
-        } catch (Exception e) {
-            System.exit(1);
-        }
-    }
-
-    private static boolean checkInfiniteLoop(){
-        Node previous = best.parent;
-        int c = 0;
-        while(previous != null){
-            if(best.equalsAt(previous)){
-                ++c;
-            }
-            previous = previous.parent;
-        }
-        //System.out.println("****BEST***");
-        //System.out.println(best);
-        try {
-        //Thread.sleep(500);
-
-        }catch(Exception e){
-
-        }
-        return (c >= 5);
-    }
-
-    private static void getBest(Node node){
-        //System.out.println("****NODE***");
-        //System.out.println(node);
-        //System.out.println("****COMP***");
-        //System.out.println(best.compareTo(node));
-        if (best.compareTo(node) > 0)
-            best = node;
-        if (best.compareTo(node) == 0){
-            if(best.g > node.g)
-                best = node;
-        }
-    }
-
-    private static void getNextNode(Node parent, int index){
-        Node next = new Node(parent, processus.get(index));
-        next.setH(optimize);
-        if(!closedList.contains(next)){
-            //System.out.println("add");
-            openList.add(next);
-        } else {
-            //System.out.println("boucle infinie");
-            //System.exit(0);
-        }
-    }
-
-    private static List<Integer> getProcess(Node node){
-        List<Integer> list = new ArrayList<>();
+        log("* * * * * PROCESSUS: " + processus.size() + " * * * * *");
         for (int i = 0; i < processus.size(); ++i){
-            if(processus.get(i).isPossible(node)){
-                list.add(i);
-            }
+            System.out.println(processus.get(i));
         }
-        return list;
+        log("* * * * * OPTIMIZE: " + optimize.size() + " * * * * *");
+        for (int i = 0; i < optimize.size(); ++i){
+            System.out.println(optimize.get(i));
+        }
     }
 
-    private static void run(){
-        Thread thread = new Thread(new TimeChecker(timeout, semaphore));
-        thread.start();
-        startTime = System.currentTimeMillis();
-        while(openList.size() != 0){
-            //get the first node
-            Node node = openList.poll();
-            //get all processus possible
-            List<Integer> l = getProcess(node);
-            //System.out.println("Process possible: " + l.size());
-            //get all next states
-            for (int i = 0; i < l.size(); ++i){
-                getNextNode(node, l.get(i));
+    private static boolean possible(List<Stock> needed, List<Stock> aviable){
+        for (int i = 0; i < needed.size(); ++i){
+            boolean ok = false;
+            for (int j = 0; j < aviable.size(); ++j){
+                if (needed.get(i).equals(aviable.get(j))
+                    && aviable.get(j).qty >= needed.get(i).qty)
+                    ok = true;
             }
-            //check for the best
-            getBest(node);
-            //check infinite loop
-            if (checkInfiniteLoop()){
-                System.out.println("#Infinite loop");
-                break;
-            }
-            //remove actual state
-            if (!closedList.contains(node))
-                closedList.add(node);
+            if(!ok)
+                return false;
         }
-        endTime = System.currentTimeMillis();
-        output();
+        return true;
     }
 
-    private static void parseLine(String line){
-        if(line.length() == 0 || line.charAt(0) ==  '#'){
+    private static List<Processus> getAviableProcessus(List<Stock> l){
+        List<Processus> p = new ArrayList<>();
+        for (int i = 0; i < processus.size(); ++i){
+            if (possible(processus.get(i).input, l))
+                p.add(processus.get(i));
+        }
+        return p;
+    }
 
-        } else {
-            String[] args = line.split("\\|");
-            if(args.length == 2){
-                if(args[0].trim().compareTo("optimize") == 0){
-                    String[] opts = args[1].trim().split(",");
-                    for (int i = 0; i < opts.length; ++i){
-                        optimize.add(opts[i].split("\\:")[1].trim());
+    private static void getNextState(State s){
+        Random rand = new Random();
+        for (int i = 0; i < 40; ++i){
+            List<Processus> aviable = getAviableProcessus(s.stocks);
+            State newState = new State(s, optimize);
+            //while avaible processus
+            while(aviable.size() != 0){
+
+                newState.applyInputProcess(aviable.get(rand.nextInt(aviable.size())));
+                aviable = getAviableProcessus(newState.stocks);
+                try {
+                    //Thread.sleep(1000);
+                } catch(Exception e){}
+            }
+            newState.applyOutputProcess();
+            if(!closedList.contains(newState) && !openList.contains(newState) && newState.cycle <= nbCycle)
+                openList.add(newState);
+        }
+    }
+
+    private static void solve(){
+        //Set initial state
+        initialState = new State(stocks, optimize);
+        finalState = initialState;
+        openList.add(initialState);
+        while (openList.size() != 0){
+            System.out.println("WHILE: " + openList.size());
+            State s = openList.poll();
+            
+            //get next states
+            getNextState(s);
+            //set best state
+            System.out.println(s);
+            System.out.println(finalState);
+            if (s.compareStock(finalState)){
+                System.out.println(s.compareStock(finalState) + " " + s.compareTo(finalState));
+                if(s.compareTo(finalState) < 0)
+                    finalState = s;
+            } else {
+                System.out.println(s.compareStock(finalState) + " " + s.compareTo(finalState));
+                if(s.compareTo(finalState) < 0 && s.getScore() != finalState.getScore())
+                    finalState = s;
+            }
+            //remove previous state
+            closedList.add(s);
+        }
+    }
+
+    private static void removeUselessProcessus(){
+        List<Stock> l = new ArrayList<>();
+        for (int i = 0; i < optimize.size(); ++i) {
+            l.add(optimize.get(i));
+        }
+        //for each process
+        for (int i = 0; i < processus.size(); ++i){
+            //for each stock needed
+            for(int k = 0; k < l.size(); ++k){
+                //if process output contains needed
+                if (processus.get(i).output.contains(l.get(k))) {
+                    //add process input to needed
+                    boolean nw = false;
+                    for (int j = 0; j < processus.get(i).input.size(); ++j){
+                        if(!l.contains(processus.get(i).input.get(j))){
+                            l.add(processus.get(i).input.get(j));
+                            nw = true;
+                        }
                     }
-                } else {
-                    startProducts.add(new Product(args[0].trim(), Integer.parseInt(args[1].trim())));
+                    if (nw){
+                        i = -1;
+                        break;
+                    }
                 }
-            } else if (args.length == 3) {
-                String name = args[0].trim();
-                String[] inputs = args[1].split("=>")[0].split(",");
-                String[] outputs = args[1].split("=>")[1].split(",");
-                int delay = Integer.parseInt(args[2].trim());
-
-                List<Product> l1 = new ArrayList<>();
-                List<Product> l2 = new ArrayList<>();
-                for (int i = 0; i < inputs.length; ++i){
-                    l1.add(new Product(inputs[i].split("\\:")[0].trim(), Integer.parseInt(inputs[i].split("\\:")[1].trim())));
-                }
-                for (int i = 0; i < outputs.length; ++i){
-                    l2.add(new Product(outputs[i].split("\\:")[0].trim(), Integer.parseInt(outputs[i].split("\\:")[1].trim())));
-                }
-                processus.add(new Processus(name,  l1, l2, delay));
             }
         }
+        List<Processus> p = new ArrayList<>();
+        //for each process
+        for (int i = 0; i < processus.size(); ++i){
+            boolean ok = false;
+            //for each stock needed
+            for(int k = 0; k < l.size(); ++k){
+                //if process output contains needed
+                if (processus.get(i).output.contains(l.get(k))) {
+                    ok = true;
+                    break;
+                }
+            }
+            if(!ok){
+                System.out.println("REMOVE: " + processus.get(i).name);
+                p.add(processus.get(i));
+            }
+        }
+        for (int i = 0; i < p.size(); ++i) {
+            processus.remove(p.get(i));
+        }
     }
 
-    private static void getInput(String[]args) throws Exception{
-        if (args.length != 2)
-            throw new Exception("Program must take two args <file> <timeout>");
-        timeout = Integer.parseInt(args[1].trim());
-        File f = new File(args[0]);
-        Scanner scan = new Scanner(f);
-        while(scan.hasNextLine()){
-            String line = scan.nextLine().trim();
-            parseLine(line);
-        }
-        Node n = new Node(null, startProducts, 0);
-        n.setH(optimize);
-        best = n;
-        openList.add(n);
-        scan.close();
+    private static void prepProcessing(){
+        removeUselessProcessus();
     }
-    public static void main(String args[]) {
+
+    private static void parseFile(String path) throws Exception{
+        Parser parser = new Parser();
+        parser.parseFile(path, stocks, processus, optimize);
+    }
+
+    private static void checkError(String[]args) throws Exception{
+        if (args.length != 2)
+            throw new Exception("The program takes two args <file> <nb_cycle>");
+        nbCycle = Integer.parseInt(args[1]);
+    }
+    public static void main(String[]args){
         try {
-            getInput(args);
-            run();
-        } catch (Exception e){
-            System.out.println(e + e.getMessage());
+            checkError(args);
+            parseFile(args[0]);
+            printData();
+            prepProcessing();
+            System.out.println("* * * * * * * * * * * * * * * * * * *");
+            printData();
+            solve();
+            System.out.println(finalState);
+        } catch(Exception e) {
+            System.out.println(e);
+            System.out.println(e.getMessage());
         }
     }
 }
