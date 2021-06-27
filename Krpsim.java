@@ -10,7 +10,7 @@ public class Krpsim {
     public static State initialState;
     public static PriorityQueue<State> openList = new PriorityQueue<>();
     public static List<State> closedList = new ArrayList<>();
-    public static State finalState;
+    public static State bestState;
 
     private static void log(String str){
         System.out.println(str);
@@ -31,12 +31,11 @@ public class Krpsim {
         }
     }
 
-    private static boolean possible(List<Stock> needed, List<Stock> aviable){
+    private static boolean possible(List<Stock> needed, List<Stock> available){
         for (int i = 0; i < needed.size(); ++i){
             boolean ok = false;
-            for (int j = 0; j < aviable.size(); ++j){
-                if (needed.get(i).equals(aviable.get(j))
-                    && aviable.get(j).qty >= needed.get(i).qty)
+            for (int j = 0; j < available.size(); ++j){
+                if (needed.get(i).equals(available.get(j)) && available.get(j).qty >= needed.get(i).qty)
                     ok = true;
             }
             if(!ok)
@@ -45,7 +44,7 @@ public class Krpsim {
         return true;
     }
 
-    private static List<Processus> getAviableProcessus(List<Stock> l){
+    private static List<Processus> getAvailableProcessus(List<Stock> l){
         List<Processus> p = new ArrayList<>();
         for (int i = 0; i < processus.size(); ++i){
             if (possible(processus.get(i).input, l))
@@ -57,19 +56,15 @@ public class Krpsim {
     private static void getNextState(State s){
         Random rand = new Random();
         for (int i = 0; i < 40; ++i){
-            List<Processus> aviable = getAviableProcessus(s.stocks);
+            List<Processus> available = getAvailableProcessus(s.stocks); // ça se dit pas non plus processus en anglais, on dit process
             State newState = new State(s, optimize);
             //while avaible processus
-            while(aviable.size() != 0){
-
-                newState.applyInputProcess(aviable.get(rand.nextInt(aviable.size())));
-                aviable = getAviableProcessus(newState.stocks);
-                try {
-                    //Thread.sleep(1000);
-                } catch(Exception e){}
+            while(available.size() != 0){
+                newState.applyInputProcess(available.get(rand.nextInt(available.size())));
+                available = getAvailableProcessus(newState.stocks);
             }
             newState.applyOutputProcess();
-            if(!closedList.contains(newState) && !openList.contains(newState) && newState.cycle <= nbCycle)
+            if(!closedList.contains(newState) && !openList.contains(newState) && newState.cycle <= nbCycle) // si le cycle est meilleur on devrait pas enlever l'ancien ?
                 openList.add(newState);
         }
     }
@@ -77,32 +72,31 @@ public class Krpsim {
     private static void solve(){
         //Set initial state
         initialState = new State(stocks, optimize);
-        finalState = initialState;
+        bestState = initialState;
         openList.add(initialState);
         while (openList.size() != 0){
             System.out.println("WHILE: " + openList.size());
             State s = openList.poll();
-            
-            //get next states
-            getNextState(s);
             //set best state
-            System.out.println(s);
-            System.out.println(finalState);
-            if (s.compareStock(finalState)){
-                System.out.println(s.compareStock(finalState) + " " + s.compareTo(finalState));
-                if(s.compareTo(finalState) < 0)
-                    finalState = s;
+            System.out.println("s = [" + s + "]");
+            System.out.println("bestState = [" + bestState + "]");
+            if (s.compareStock(bestState)){
+                System.out.println("true -> " + s.compareTo(bestState));
+                if(s.compareTo(bestState) < 0)
+                    bestState = s;
             } else {
-                System.out.println(s.compareStock(finalState) + " " + s.compareTo(finalState));
-                if(s.compareTo(finalState) < 0 && s.getScore() != finalState.getScore())
-                    finalState = s;
+                System.out.println("false -> " + s.compareTo(bestState));
+                if(s.compareTo(bestState) < 0 && s.getScore() != bestState.getScore())
+                    bestState = s;
             }
             //remove previous state
             closedList.add(s);
+            //get next states
+            getNextState(s);
         }
     }
 
-    private static void removeUselessProcessus(){
+    private static void removeUselessProcessus(){ // c'est pas impossible que t'en louppes certains
         List<Stock> l = new ArrayList<>();
         for (int i = 0; i < optimize.size(); ++i) {
             l.add(optimize.get(i));
@@ -171,11 +165,10 @@ public class Krpsim {
             printData();
             prepProcessing();
             System.out.println("* * * * * * * * * * * * * * * * * * *");
-            printData();
+            // printData();
             solve();
-            System.out.println(finalState);
+            System.out.println(bestState);
         } catch(Exception e) {
-            System.out.println(e);
             System.out.println(e.getMessage());
         }
     }
